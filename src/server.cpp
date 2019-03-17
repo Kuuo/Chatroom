@@ -11,25 +11,15 @@
 #include <iostream>
 #include <vector>
 
-struct ps
-{
-    int st;
-    pthread_t *thr;
-};
-
-//静态多线程初始化
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-int curClientCount = 0;
-std::vector<ps> clients;
+std::vector<int> clients;
 
 std::string getAllClients(int FD)
 {
     std::string ret = "-----CLIENT LIST-----\n";
     for (auto &c : clients)
     {
-        ret += std::to_string(c.st);
-        if (c.st == FD)
+        ret += std::to_string(c);
+        if (c == FD)
         {
             ret += " (you)";
         }
@@ -43,7 +33,7 @@ void sendMsg2AllClients(const char *content)
 {
     for (auto &c : clients)
     {
-        send(c.st, content, strlen(content), 0);
+        send(c, content, strlen(content), 0);
     }
 }
 
@@ -51,16 +41,15 @@ void sendMsg2ClientsExcept(const char *content, int exceptFD)
 {
     for (auto &c : clients)
     {
-        if (c.st == exceptFD)
+        if (c == exceptFD)
             continue;
-        send(c.st, content, strlen(content), 0);
+        send(c, content, strlen(content), 0);
     }
 }
 
 void *recvsocket(void *arg) //接收client端socket数据的线程
 {
-    struct ps *p = (struct ps *)arg;
-    int st = p->st;
+    int st = *(int*)arg;
     char s[1024];
 
     while (1)
@@ -83,11 +72,7 @@ void *recvsocket(void *arg) //接收client端socket数据的线程
         sendMsg2ClientsExcept(content, st);
     }
 
-    pthread_mutex_lock(&mutex);
-    curClientCount--;
-    pthread_mutex_unlock(&mutex);
-    pthread_cancel(*(p->thr)); //被cancel掉的线程内部没有使用锁。
-    return NULL;
+    close(st);
 }
 
 void *sendsocket(void *arg) //向client端socket发送数据的线程
@@ -99,10 +84,9 @@ void *sendsocket(void *arg) //向client端socket发送数据的线程
         read(STDIN_FILENO, s, sizeof(s)); //从键盘读取用户输入信息
 
         char content[2048];
-        sprintf(content, "\nSERVER: %s\n", s);
+        sprintf(content, "SERVER: %s", s);
         sendMsg2AllClients(content);
     }
-    return NULL;
 }
 
 int main(int arg, char *args[])
@@ -145,7 +129,6 @@ int main(int arg, char *args[])
 
     pthread_t thread_send;
     pthread_create(&thread_send, NULL, sendsocket, NULL);
-    pthread_detach(thread_send); //设置线程为可分离
 
     int client_st = 0;              //client端socket
     struct sockaddr_in client_addr; //表示client端的IP地址
@@ -158,32 +141,23 @@ int main(int arg, char *args[])
         //accept会阻塞，直到有客户端连接过来，accept返回client的socket描述符
         client_st = accept(st, (struct sockaddr *)&client_addr, &len);
 
-        pthread_mutex_lock(&mutex); //为全局变量加一个互斥锁，防止与线程函数同时读写变量的冲突
-        curClientCount++;
-        pthread_mutex_unlock(&mutex); //解锁
-
         if (client_st == -1)
         {
             printf("Client connection failed %s\n", strerror(errno));
-            curClientCount--;
             return EXIT_FAILURE;
         }
 
         printf("New Client from: %s\n", inet_ntoa(client_addr.sin_addr));
 
+        clients.push_back(client_st);
+
         pthread_t thrd1;
-        struct ps ps1;
-        ps1.st = client_st;
-        ps1.thr = &thrd1;
-
-        clients.push_back(ps1);
-
-        pthread_create(&thrd1, NULL, recvsocket, &ps1);
-        pthread_detach(thrd1); //设置线程为可分离
+        pthread_create(&thrd1, NULL, recvsocket, &client_st);
 
         // std::string greeting = "Greeting from server~~ Hello " + client_st + '\n';
         // send(client_st, greeting.c_str(), greeting.size(), 0);
     }
-    close(st); //关闭server端listen的socket
+
+    close(st);
     return EXIT_SUCCESS;
 }

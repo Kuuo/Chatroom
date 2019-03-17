@@ -23,7 +23,6 @@ void *recvsocket(void *arg) //接收server端socket数据的线程
         printf("%s", s);
         fflush(stdin);
     }
-    return NULL;
 }
 
 void *sendsocket(void *arg) //向server端socket发送数据的线程
@@ -35,8 +34,8 @@ void *sendsocket(void *arg) //向server端socket发送数据的线程
         memset(s, 0, sizeof(s));
         read(STDIN_FILENO, s, sizeof(s)); //从键盘读取用户输入信息
         send(st, s, strlen(s), 0);
+        fflush(stdin);
     }
-    return NULL;
 }
 
 int main(int arg, char *args[])
@@ -68,7 +67,7 @@ int main(int arg, char *args[])
     pthread_create(&thrd1, NULL, recvsocket, &st);
     pthread_create(&thrd2, NULL, sendsocket, &st);
     pthread_join(thrd1, NULL);
-    //pthread_join(thrd2, NULL);
-    close(st); //关闭socket
+    // pthread_join(thrd2, NULL);
+    close(st);
     return EXIT_SUCCESS;
 }
