@@ -2,6 +2,7 @@
 A simple LAN chatroom implemented with pthread & socket.
 
 **Development**
+
 OS: Ubuntu 16.04
 
 
