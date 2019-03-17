@@ -34,3 +34,9 @@ bash compile.sh
 ```
 ./client <SERVER_IP> <SERVER_PORT>
 ```
+
+## Special Commands
+
+**Client:**
+
+- `GET_CLIENT_LIST`: show all current online client ids.
