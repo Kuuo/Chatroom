@@ -3,23 +3,14 @@ A simple LAN chatroom implemented with pthread & socket.
 
 **Development**
 
-OS: Ubuntu 16.04
-
+- OS: Ubuntu 16.04
+- Language: C++ 11
 
 # Usage
 
 ## Compile
 
-```
-g++ src/server.cpp -o server -lpthread -std=c++11
-g++ src/client.cpp -o client -lpthread -std=c++11
-```
-
-or simply
-
-```
-bash compile.sh
-```
+Just `make`
 
 ## Run
 
