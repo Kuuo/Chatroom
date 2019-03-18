@@ -30,4 +30,7 @@ Just `make`
 
 **Client:**
 
-- `GET_CLIENT_LIST`: show all current online client ids.
+- `-a`: show all current online client ids and nicknames.
+- `-q`: quit chat room.
+- `-nn <new_nick_name>`: change nickname to `<new_nick_name>`.
+- `-p <user_id> <msg>`: send private message `<msg>` to client `<user_id>`
